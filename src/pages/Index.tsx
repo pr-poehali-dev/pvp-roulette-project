@@ -165,7 +165,8 @@ const Index = () => {
         }
       }
 
-      const winnerAngle = ((winnerSegmentEnd - (selectedWinner ? finalBets.find(b => b.playerId === selectedWinner?.id)?.amount || 0) / 2) / finalTotalPot) * 360;
+      const winnerBetAmount = selectedWinner ? (finalBets.find(b => b.playerId === selectedWinner?.id)?.amount || 0) : 0;
+      const winnerAngle = ((winnerSegmentEnd - winnerBetAmount / 2) / finalTotalPot) * 360;
       const targetAngle = 360 - winnerAngle + 90;
       const fullSpins = 5 + Math.random() * 2;
       const newRotation = fullSpins * 360 + targetAngle;
