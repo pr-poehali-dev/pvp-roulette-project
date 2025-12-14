@@ -31,6 +31,11 @@ interface Round {
 
 const PLAYER_COLORS = ['#8B5CF6', '#D946EF', '#0EA5E9', '#F97316', '#10B981', '#F59E0B'];
 
+const BOT_NAMES = [
+  'Алекс', 'Макс', 'Дима', 'Саша', 'Никита', 'Данил',
+  'Влад', 'Артём', 'Егор', 'Илья', 'Кирилл', 'Олег'
+];
+
 const Index = () => {
   const [currentPlayer] = useState<Player>({
     id: '1',
@@ -95,6 +100,31 @@ const Index = () => {
     toast.success(`Ставка ${amount} 🎁 принята!`);
   };
 
+  const addBotBets = (playerBet: number) => {
+    const botCount = Math.floor(Math.random() * 2) + 2;
+    const newBets: Bet[] = [...bets];
+    
+    for (let i = 0; i < botCount; i++) {
+      const botId = `bot-${Date.now()}-${i}`;
+      const variation = 0.5 + Math.random();
+      const botBetAmount = Math.floor(playerBet * variation);
+      
+      const botPlayer: Player = {
+        id: botId,
+        name: BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)],
+        balance: 0,
+        color: PLAYER_COLORS[(i + 1) % PLAYER_COLORS.length],
+        wins: 0,
+        losses: 0
+      };
+      
+      setPlayers(prev => [...prev, botPlayer]);
+      newBets.push({ playerId: botId, amount: botBetAmount });
+    }
+    
+    return newBets;
+  };
+
   const spinWheel = () => {
     if (bets.length === 0) {
       toast.error('Сделайте ставку для начала игры');
@@ -103,12 +133,22 @@ const Index = () => {
 
     setIsSpinning(true);
     setWinner(null);
+    
+    let finalBets = bets;
+    if (bets.length === 1) {
+      const playerBet = bets[0].amount;
+      finalBets = addBotBets(playerBet);
+      setBets(finalBets);
+      toast.info('К игре присоединились боты!');
+    }
 
-    const random = Math.random() * totalPot;
+    const finalTotalPot = finalBets.reduce((sum, bet) => sum + bet.amount, 0);
+
+    const random = Math.random() * finalTotalPot;
     let accumulated = 0;
     let selectedWinner: Player | null = null;
 
-    for (const bet of bets) {
+    for (const bet of finalBets) {
       accumulated += bet.amount;
       if (random <= accumulated) {
         selectedWinner = players.find(p => p.id === bet.playerId) || null;
@@ -127,24 +167,26 @@ const Index = () => {
       if (selectedWinner) {
         const updatedPlayers = players.map(p => {
           if (p.id === selectedWinner.id) {
-            return { ...p, balance: p.balance + totalPot, wins: p.wins + 1 };
-          } else if (bets.find(b => b.playerId === p.id)) {
+            return { ...p, balance: p.balance + finalTotalPot, wins: p.wins + 1 };
+          } else if (finalBets.find(b => b.playerId === p.id)) {
             return { ...p, losses: p.losses + 1 };
           }
           return p;
         });
-        setPlayers(updatedPlayers);
+        
+        const cleanedPlayers = updatedPlayers.filter(p => !p.id.startsWith('bot-'));
+        setPlayers(cleanedPlayers);
 
         const round: Round = {
           id: history.length + 1,
           winner: selectedWinner.name,
-          totalPot,
+          totalPot: finalTotalPot,
           timestamp: new Date().toLocaleTimeString('ru-RU'),
-          participants: bets.length
+          participants: finalBets.length
         };
         setHistory([round, ...history]);
 
-        toast.success(`${selectedWinner.name} выиграл ${totalPot} 🎁!`, {
+        toast.success(`${selectedWinner.name} выиграл ${finalTotalPot} 🎁!`, {
           duration: 5000
         });
       }
