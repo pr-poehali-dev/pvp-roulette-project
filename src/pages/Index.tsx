@@ -253,14 +253,39 @@ const Index = () => {
               const x2 = 160 + 160 * Math.cos(endAngle);
               const y2 = 160 + 160 * Math.sin(endAngle);
 
+              const midAngle = (segment.startAngle + segment.angle / 2 - 90) * (Math.PI / 180);
+              const textRadius = 100;
+              const textX = 160 + textRadius * Math.cos(midAngle);
+              const textY = 160 + textRadius * Math.sin(midAngle);
+              const textRotation = segment.startAngle + segment.angle / 2;
+
               return (
-                <path
-                  key={idx}
-                  d={`M 160 160 L ${x1} ${y1} A 160 160 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                  fill={segment.color}
-                  stroke="rgba(0,0,0,0.3)"
-                  strokeWidth="1"
-                />
+                <g key={idx}>
+                  <path
+                    d={`M 160 160 L ${x1} ${y1} A 160 160 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                    fill={segment.color}
+                    stroke="rgba(0,0,0,0.3)"
+                    strokeWidth="1"
+                  />
+                  {segment.angle > 20 && (
+                    <text
+                      x={textX}
+                      y={textY}
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="600"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      transform={`rotate(${textRotation}, ${textX}, ${textY})`}
+                      style={{ 
+                        textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                        pointerEvents: 'none'
+                      }}
+                    >
+                      {segment.player?.name}
+                    </text>
+                  )}
+                </g>
               );
             })}
           </svg>
