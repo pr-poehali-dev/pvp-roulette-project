@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+import { playSpinSound, playWinSound } from '@/utils/sounds';
 
 interface Player {
   id: string;
@@ -58,6 +59,13 @@ const Index = () => {
   const [winner, setWinner] = useState<Player | null>(null);
   const [history, setHistory] = useState<Round[]>([]);
   const [rotation, setRotation] = useState(0);
+  const spinSoundRef = useRef<any>(null);
+  const winSoundRef = useRef<any>(null);
+
+  useEffect(() => {
+    spinSoundRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBiqJzvHWgzYIEV+z69yfSwwOS6Ll7bNiHQU7k9jxy3kpBSV4yPDdjD0JElyz6+ylUxELR5/f8bljHwcsi9Dx1oM0Bw5htevdn0sLDkyh4+ywYBsEOI/Y8sx6KwUmecrw3I4+CRJbtuvqpVIRC0ee3vG6YR8HK4nO8NWFMwcOYrTq3Z9LCw5ModvqpFYSC0ed3/K7YiAICYvQ8dSHMQcNYrPp25tJCw5Lo9vqpFURCkad3vG7Yh8HKonO8NSGMQgMYbTo3J5KCw1Ko9zqo1MSCkee3/K8YiAICInP8dOHMAcMYrLo25pJDA1Lo9vppFUSCUWd3vG6YiAHKYnO8NKGMAgMYbTo25pJDA1Ko9zqo1MSCUSd3vG7YyEICYnQ8dOIMQgNYrPp3JxKCw1Ko9zqo1QRCkWe3/K7YyAICInP8NKGMAgMYbLo25pKDA1Lo9vppFUSCUSd3vG7YyEICYnP8dKHMQgNYrPo3JxKDA1Lo9vqpFUSCkSe3vG7YyEHCYjO8NKGMQcMYbLn25lKCwxKotvppFURCUOd3fG7ZCEICIjO8dKGMQcMYbLn25lJCwxKotzqpVQRCkOd3fG7ZCEICYjP8dOGMQgMYrLo3JtKDA1Ko9vqpFURCkSd3vK8YyEICYnO8dKHMQgNYrPp3JtKCw1Ko9zqpFQSCUSe3vK8YyEICInO8dKGMQgMYbLo25pKCwxKo9vqpFUSCUSd3vK8YyEICYnP8dOHMggNYrPp3JxKDA1Ko9zqpFQRCkSd3vK8ZCIICYjP8dOGMggNYbPo3JtKDA1Ko9zqpVQSCkSe3vK8ZCIICYnP8dOHMggNYrPp3JtKCw1Lo9zqpVMRCkSd3vK9ZCMICYnP8dOHMggNYrPp3JxLCw1Ko9zqpVMSCkSe3/K9ZSMICYnP8dOHMggNYrLp3JtKCw1Ko9vqpVMSCUSe3/K9ZCMICYnO8dOGMQcMYbLo25pKCwxKo9zqpVQRCUSe3/K9ZSMICYnP8dOIMQgNYrPp3JxLDA1Ko9vqpVMSCUSe3/O+ZSQJCYnP8tOHMggNYrPp3JxLCw1Ko9vqpVMSCUSe4PO+ZiQJCojQ8tOIMAcMYbHo25lJCwxKotvqpVMRCEOd3vO+ZSMICIjO8NKGMQcLYbHn2plJCwxKotvqpFQRCEOd3vO9ZCMICIjO8NKGMQcLYbHn2plJCgxKotvqpFQRCEOd3vO9ZCMICIjO8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxKotvqo1QRB0Kd3vO9ZCMICIjN8NKGMQcLYbHn2plJCgxK... [truncated]
+    winSoundRef.current = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+  }, []);
 
   const totalPot = bets.reduce((sum, bet) => sum + bet.amount, 0);
 
@@ -168,10 +176,11 @@ const Index = () => {
       const winnerBetAmount = selectedWinner ? (finalBets.find(b => b.playerId === selectedWinner?.id)?.amount || 0) : 0;
       const winnerAngle = ((winnerSegmentEnd - winnerBetAmount / 2) / finalTotalPot) * 360;
       const targetAngle = 360 - winnerAngle + 90;
-      const fullSpins = 5 + Math.random() * 2;
+      const fullSpins = 8 + Math.random() * 3;
       const newRotation = fullSpins * 360 + targetAngle;
       
       setRotation(newRotation);
+      playSpinSound();
 
       setTimeout(() => {
         setIsSpinning(false);
@@ -205,7 +214,8 @@ const Index = () => {
         }
 
         setBets([]);
-      }, 4500);
+        playWinSound();
+      }, 10000);
     }, 100);
   };
 
@@ -238,7 +248,7 @@ const Index = () => {
           className="w-80 h-80 rounded-full border-4 border-primary shadow-2xl relative overflow-hidden"
           style={{ 
             transform: `rotate(${rotation}deg)`,
-            transition: isSpinning ? 'transform 4.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
+            transition: isSpinning ? 'transform 10s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
             boxShadow: '0 0 60px rgba(139, 92, 246, 0.4)'
           }}
         >
