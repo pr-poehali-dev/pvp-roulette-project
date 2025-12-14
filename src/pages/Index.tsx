@@ -100,9 +100,10 @@ const Index = () => {
     toast.success(`Ставка ${amount} 🎁 принята!`);
   };
 
-  const addBotBets = (playerBet: number) => {
+  const addBotBets = (playerBet: number, currentPlayers: Player[]) => {
     const botCount = Math.floor(Math.random() * 2) + 2;
     const newBets: Bet[] = [...bets];
+    const newPlayers: Player[] = [];
     
     for (let i = 0; i < botCount; i++) {
       const botId = `bot-${Date.now()}-${i}`;
@@ -113,16 +114,16 @@ const Index = () => {
         id: botId,
         name: BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)],
         balance: 0,
-        color: PLAYER_COLORS[(i + 1) % PLAYER_COLORS.length],
+        color: PLAYER_COLORS[(currentPlayers.length + i) % PLAYER_COLORS.length],
         wins: 0,
         losses: 0
       };
       
-      setPlayers(prev => [...prev, botPlayer]);
+      newPlayers.push(botPlayer);
       newBets.push({ playerId: botId, amount: botBetAmount });
     }
     
-    return newBets;
+    return { newBets, newPlayers };
   };
 
   const spinWheel = () => {
@@ -135,64 +136,76 @@ const Index = () => {
     setWinner(null);
     
     let finalBets = bets;
+    let allPlayers = players;
+    
     if (bets.length === 1) {
       const playerBet = bets[0].amount;
-      finalBets = addBotBets(playerBet);
+      const { newBets, newPlayers } = addBotBets(playerBet, players);
+      finalBets = newBets;
+      allPlayers = [...players, ...newPlayers];
+      setPlayers(allPlayers);
       setBets(finalBets);
       toast.info('К игре присоединились боты!');
     }
 
-    const finalTotalPot = finalBets.reduce((sum, bet) => sum + bet.amount, 0);
-
-    const random = Math.random() * finalTotalPot;
-    let accumulated = 0;
-    let selectedWinner: Player | null = null;
-
-    for (const bet of finalBets) {
-      accumulated += bet.amount;
-      if (random <= accumulated) {
-        selectedWinner = players.find(p => p.id === bet.playerId) || null;
-        break;
-      }
-    }
-
-    const spins = 5 + Math.random() * 3;
-    const newRotation = rotation + spins * 360;
-    setRotation(newRotation);
-
     setTimeout(() => {
-      setIsSpinning(false);
-      setWinner(selectedWinner);
-      
-      if (selectedWinner) {
-        const updatedPlayers = players.map(p => {
-          if (p.id === selectedWinner.id) {
-            return { ...p, balance: p.balance + finalTotalPot, wins: p.wins + 1 };
-          } else if (finalBets.find(b => b.playerId === p.id)) {
-            return { ...p, losses: p.losses + 1 };
-          }
-          return p;
-        });
-        
-        const cleanedPlayers = updatedPlayers.filter(p => !p.id.startsWith('bot-'));
-        setPlayers(cleanedPlayers);
+      const finalTotalPot = finalBets.reduce((sum, bet) => sum + bet.amount, 0);
 
-        const round: Round = {
-          id: history.length + 1,
-          winner: selectedWinner.name,
-          totalPot: finalTotalPot,
-          timestamp: new Date().toLocaleTimeString('ru-RU'),
-          participants: finalBets.length
-        };
-        setHistory([round, ...history]);
+      const random = Math.random() * finalTotalPot;
+      let accumulated = 0;
+      let selectedWinner: Player | null = null;
+      let winnerSegmentEnd = 0;
 
-        toast.success(`${selectedWinner.name} выиграл ${finalTotalPot} 🎁!`, {
-          duration: 5000
-        });
+      for (const bet of finalBets) {
+        accumulated += bet.amount;
+        if (random <= accumulated && !selectedWinner) {
+          selectedWinner = allPlayers.find(p => p.id === bet.playerId) || null;
+          winnerSegmentEnd = accumulated;
+          break;
+        }
       }
 
-      setBets([]);
-    }, 4000);
+      const winnerAngle = ((winnerSegmentEnd - (selectedWinner ? finalBets.find(b => b.playerId === selectedWinner?.id)?.amount || 0) / 2) / finalTotalPot) * 360;
+      const targetAngle = 360 - winnerAngle + 90;
+      const fullSpins = 5 + Math.random() * 2;
+      const newRotation = fullSpins * 360 + targetAngle;
+      
+      setRotation(newRotation);
+
+      setTimeout(() => {
+        setIsSpinning(false);
+        setWinner(selectedWinner);
+        
+        if (selectedWinner) {
+          const updatedPlayers = allPlayers.map(p => {
+            if (p.id === selectedWinner.id) {
+              return { ...p, balance: p.balance + finalTotalPot, wins: p.wins + 1 };
+            } else if (finalBets.find(b => b.playerId === p.id)) {
+              return { ...p, losses: p.losses + 1 };
+            }
+            return p;
+          });
+          
+          const cleanedPlayers = updatedPlayers.filter(p => !p.id.startsWith('bot-'));
+          setPlayers(cleanedPlayers);
+
+          const round: Round = {
+            id: history.length + 1,
+            winner: selectedWinner.name,
+            totalPot: finalTotalPot,
+            timestamp: new Date().toLocaleTimeString('ru-RU'),
+            participants: finalBets.length
+          };
+          setHistory([round, ...history]);
+
+          toast.success(`${selectedWinner.name} выиграл ${finalTotalPot} 🎁!`, {
+            duration: 5000
+          });
+        }
+
+        setBets([]);
+      }, 4500);
+    }, 100);
   };
 
   const renderWheel = () => {
@@ -221,9 +234,10 @@ const Index = () => {
     return (
       <div className="relative">
         <div 
-          className="w-80 h-80 rounded-full border-4 border-primary shadow-2xl relative overflow-hidden transition-transform duration-[4000ms] ease-out"
+          className="w-80 h-80 rounded-full border-4 border-primary shadow-2xl relative overflow-hidden"
           style={{ 
             transform: `rotate(${rotation}deg)`,
+            transition: isSpinning ? 'transform 4.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
             boxShadow: '0 0 60px rgba(139, 92, 246, 0.4)'
           }}
         >
